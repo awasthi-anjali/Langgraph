@@ -77,24 +77,6 @@ You use Groq inside SuperBot.
 🔹 4. SuperBot Node
 Your code:
 def superbot(state: State):
-    return {"messages":[llm_groq.invoke(state['message'])]} 
-
-❌ Bug
-
-State contains:
-
-messages
-
-
-But you used:
-
-state['message']
-
-
-Singular vs plural.
-
-✅ Correct SuperBot
-def superbot(state: State):
     return {"messages": [llm_groq.invoke(state["messages"])]}
 
 What SuperBot does:
@@ -197,7 +179,8 @@ graph_builder.invoke({
 
 Say:
 
-I use TypedDict State with add_messages reducer to maintain conversation. SuperBot node calls LLM and returns messages. StateGraph connects START to SuperBot and END. compile creates executable graph and stream allows real-time output.
+I use TypedDict State with add_messages reducer to maintain conversation. SuperBot node calls LLM and returns messages. 
+StateGraph connects START to SuperBot and END. compile creates executable graph and stream allows real-time output.
 
 🎯 One-Line Summary
 
