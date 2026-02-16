@@ -1,0 +1,204 @@
+LangGraph Conversational Agent — Beginner Notes
+🧠 Goal of this program
+
+You want to:
+
+✅ Keep chat history
+✅ Send user message to Groq LLM
+✅ Store assistant reply back into State
+✅ Run through LangGraph
+✅ Visualize graph
+✅ Stream results
+
+Flow:
+
+5
+START
+  ↓
+SuperBot (LLM)
+  ↓
+END
+
+🔹 1. State + Reducer (Conversation Memory)
+from typing_extensions import TypedDict
+from typing import Annotated
+from langgraph.graph.message import add_messages
+
+State
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+
+✏️ Notes (IMPORTANT)
+messages
+
+Stores chat history.
+
+Annotated[list, add_messages]
+
+This is called a reducer.
+
+Reducer meaning:
+
+👉 When nodes return messages, LangGraph MERGES them
+👉 Instead of overwriting, it APPENDS
+
+So conversation grows:
+
+[user → bot → user → bot]
+
+
+Without reducer, history would be lost.
+
+🔹 2. Environment + API Keys
+from dotenv import load_dotenv
+load_dotenv()
+
+
+Loads .env.
+
+os.environ["OPENAI_API_KEY"]
+os.environ["GROQ_API_KEY"]
+
+
+Used by LLM libraries.
+
+🔹 3. LLM Setup
+OpenAI (paid)
+from langchain_openai import ChatOpenAI
+llm = ChatOpenAI(model="gpt-4o")
+
+Groq (free + fast)
+from langchain_groq import ChatGroq
+llm_groq = ChatGroq(model="llama-3.1-8b-instant")
+
+
+You use Groq inside SuperBot.
+
+🔹 4. SuperBot Node
+Your code:
+def superbot(state: State):
+    return {"messages":[llm_groq.invoke(state['message'])]} 
+
+❌ Bug
+
+State contains:
+
+messages
+
+
+But you used:
+
+state['message']
+
+
+Singular vs plural.
+
+✅ Correct SuperBot
+def superbot(state: State):
+    return {"messages": [llm_groq.invoke(state["messages"])]}
+
+What SuperBot does:
+
+Reads conversation from state["messages"]
+
+Sends to LLM
+
+Gets AI response
+
+Returns as new message
+
+Reducer appends it
+
+🔹 5. Graph Construction
+Create graph
+graph = StateGraph(State)
+
+Add node
+graph.add_node("SuperBot", superbot)
+
+
+Registers SuperBot.
+
+Add edges
+graph.add_edge(START, "SuperBot")
+graph.add_edge("SuperBot", END)
+
+
+Meaning:
+
+START → SuperBot → END
+
+Compile
+graph_builder = graph.compile()
+
+
+Blueprint → runnable graph.
+
+🔹 6. Visualization
+display(Image(graph_builder.get_graph().draw_mermaid_png()))
+
+
+Shows Mermaid diagram.
+
+🔹 7. Invocation (YOU HAD ERRORS HERE)
+❌ Wrong
+graph_builder.invoke({'messages':"Hi..."})
+
+
+Because:
+
+messages MUST be list of chat objects.
+
+✅ Correct
+graph_builder.invoke({
+  "messages": [
+     {"role":"user","content":"Hi, my name is Anjali and I like badminton"}
+  ]
+})
+
+🔹 8. Streaming
+❌ Wrong
+graph_builder.stream({"messages":"Hello"})
+
+✅ Correct Streaming
+for event in graph_builder.stream(
+    {"messages":[{"role":"user","content":"Hello my name is Anjali"}]},
+    stream_mode="values"
+):
+    print(event)
+
+⭐ Beginner Rules (WRITE THESE)
+✅ messages must be LIST
+✅ each message = {role, content}
+✅ reducer add_messages keeps history
+✅ keys must match State
+✅ node names are case-sensitive
+✅ invoke input must follow State schema
+📌 Clean Final Working Example
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+
+def superbot(state: State):
+    return {"messages":[llm_groq.invoke(state["messages"])]}
+
+graph = StateGraph(State)
+
+graph.add_node("SuperBot", superbot)
+graph.add_edge(START,"SuperBot")
+graph.add_edge("SuperBot",END)
+
+graph_builder = graph.compile()
+
+graph_builder.invoke({
+ "messages":[{"role":"user","content":"Hi Anjali"}]
+})
+
+🧑‍💼 Interview Explanation (Short)
+
+Say:
+
+I use TypedDict State with add_messages reducer to maintain conversation. SuperBot node calls LLM and returns messages. StateGraph connects START to SuperBot and END. compile creates executable graph and stream allows real-time output.
+
+🎯 One-Line Summary
+
+👉 This builds a LangGraph chat agent with memory using message reducers.
