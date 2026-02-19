@@ -9,3 +9,6 @@ langchain-groq
 arxiv
 wikipedia
 langchain-tavily
+langgraph-cli[inmem]
+langsmith
+langsmith[cli]
