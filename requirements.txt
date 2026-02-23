@@ -12,3 +12,6 @@ langchain-tavily
 langgraph-cli[inmem]
 langsmith
 langsmith[cli]
+faiss-cpu
+sentence-transformers
+langchainhub
